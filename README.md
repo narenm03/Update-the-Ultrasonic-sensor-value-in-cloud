@@ -1,4 +1,6 @@
-# Update-the-Ultrasonic-sensor-value-in-Things Mate
+# Update the  Ultrasonic sensor value in Things Mate
+# NAME : NARENDHARAN.M
+# REG NO:212223230134
 
 # AIM:
 To upload the Ultrasonic sensor value in the Things mate using Arduino controller.
@@ -69,9 +71,152 @@ Analytics capabilities enable organizations to derive meaningful insights from t
 
 # PROGRAM:
 
+```
+#include <SoftwareSerial.h>
+#include <Adafruit_Sensor.h>
+
+#define triggerpin 8                 // trigger pin connected to the ultrosonic sensor 
+#define echopin 9                   // techo pin connected to the ultrosonic sensor 
+
+int duration, inches, cm;
+String inputString = "";         // a String to hold incoming data
+bool stringComplete = false;     // whether the string is complete
+long old_time=millis();
+long new_time;
+long uplink_interval=30000;      //ms
+bool time_to_at_recvb=false;
+bool get_LA66_data_status=false;
+bool network_joined_status=false;
+char rxbuff[128];
+uint8_t rxbuff_index=0;
+
+SoftwareSerial ss(10, 11);       // Create a SoftwareSerial port on Arduino pins 10 (RX) and 11 (TX)
+
+void setup() {
+  pinMode(triggerpin,OUTPUT);
+  pinMode(echopin,INPUT);
+  Serial.begin(9600);
+  ss.begin(9600);
+  ss.listen();
+
+  inputString.reserve(200);
+  sensor_t sensor;
+  ss.println("ATZ");//reset LA66
+}
+
+void loop() {
+new_time = millis();
+if((new_time-old_time>=uplink_interval)&&(network_joined_status==1)){
+    old_time = new_time;
+    get_LA66_data_status=false;
+    HC04();      
+    char sensor_data_buff[128]="\0";            
+    snprintf(sensor_data_buff,128,"AT+SENDB=%d,%d,%d,%02X%02X",0,2,2,(short)(inches),(short)(cm));
+    ss.println(sensor_data_buff);
+  }
+  if(time_to_at_recvb==true){
+    time_to_at_recvb=false;
+    get_LA66_data_status=true;
+    delay(1000);    
+    ss.println("AT+CFG");    
+  }
+    while ( ss.available()) {
+    char inChar = (char) ss.read();
+     inputString += inChar;
+    rxbuff[rxbuff_index++]=inChar;
+    if(rxbuff_index>128)
+    break;
+    
+      if (inChar == '\n' || inChar == '\r') {
+      stringComplete = true;
+      rxbuff[rxbuff_index]='\0';
+       if(strncmp(rxbuff,"JOINED",6)==0){
+        network_joined_status=1;
+      }
+      if(strncmp(rxbuff,"Dragino LA66 Device",19)==0){
+        network_joined_status=0;
+      }
+      if(strncmp(rxbuff,"Run AT+RECVB=? to see detail",28)==0){
+        time_to_at_recvb=true;
+        stringComplete=false;
+        inputString = "\0";
+      }
+      if(strncmp(rxbuff,"AT+RECVB=",9)==0){       
+        stringComplete=false;
+        inputString = "\0";
+        Serial.print("\r\nGet downlink data(FPort & Payload) ");
+        Serial.println(&rxbuff[9]);
+      }
+       rxbuff_index=0;
+      if(get_LA66_data_status==true){
+        stringComplete=false;
+        inputString = "\0";
+      }
+    }
+  }
+
+   while ( Serial.available()) {
+    char inChar = (char) Serial.read();
+    inputString += inChar;
+    if (inChar == '\n' || inChar == '\r') {
+      ss.print(inputString);
+      inputString = "\0";
+    }
+  }
+ 
+  if (stringComplete) {
+    Serial.print(inputString);
+    
+    // clear the string:
+    inputString = "\0";
+    stringComplete = false;
+  }
+}
+
+void HC04()
+{
+   digitalWrite(triggerpin, LOW);
+   delayMicroseconds(2);
+   digitalWrite(triggerpin, HIGH);
+   delayMicroseconds(10);
+   digitalWrite(triggerpin, LOW);
+   duration = pulseIn(echopin, HIGH);
+   inches = microsecondsToInches(duration);
+   cm = microsecondsToCentimeters(duration);
+   Serial.print(inches);
+   Serial.print("in, ");
+   Serial.print(cm);
+   Serial.print("cm");
+   Serial.println();
+}
+long microsecondsToInches(long microseconds) 
+{
+   return microseconds / 74 / 2;
+}
+long microsecondsToCentimeters(long microseconds) 
+{
+   return microseconds / 29 / 2;
+}
+
+
+```
+
 # CIRCUIT DIAGRAM:
 
+<img width="1600" height="1200" alt="image" src="https://github.com/user-attachments/assets/b96376ce-041e-418c-ba8c-88744edf3252" />
+
+
+
 # OUTPUT:
+
+<img width="434" height="699" alt="image" src="https://github.com/user-attachments/assets/51c02b66-9918-4fcc-ba67-a0d3927056ed" />
+
+<img width="1918" height="965" alt="Screenshot 2025-11-14 110243" src="https://github.com/user-attachments/assets/428f278b-d900-4794-82db-bdabf9f46728" />
+
+<img width="1919" height="1079" alt="Screenshot 2025-11-14 104944" src="https://github.com/user-attachments/assets/e5d885fd-f41e-4b81-afa2-510bd0fc4d7c" />
+
+
+
 
 # RESULT:
 
