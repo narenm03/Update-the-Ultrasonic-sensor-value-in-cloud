@@ -1,8 +1,6 @@
 # Update-the-Ultrasonic-sensor-value-in-cloud
 ## NAME: NARENDHARAN.M
 ## REG NO: 212223230134
-# Uploading ultrasonic sensor data in Thing Speak cloud
-
 # AIM:
 To monitor the distance of the obstacle in the Thing speak cloud using ultrasonic sensor and ESP32 controller.
 # Apparatus required:
